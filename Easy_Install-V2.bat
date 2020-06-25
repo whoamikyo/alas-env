@@ -21,7 +21,6 @@ goto check_Permissions
     )
 
     pause >nul
-
 :: -----------------------------------------------------------------------------
 goto menu
 :menu
@@ -197,6 +196,8 @@ rem 	)
 	call %GIT% pull origin master
 	echo ## setting default branch...
 	call %GIT% branch --set-upstream-to=origin/master master
+	echo ## adding LMESZINC remote origin
+	call %GIT% remote add LMESZINC %LMESZINC%
 	call %PYTHON% --version >nul
 	if %errorlevel% == 0 (
 	echo Python Found! Proceeding..
