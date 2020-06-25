@@ -1,11 +1,15 @@
 @echo off
 pushd "%~dp0"
 :: VARIABLES INSTALL
-
+SET RENAME="toolkit"
+if exist %RENAME% (
+  rename %RENAME% toolkit
+)
 SET CMD=%SystemRoot%\system32\cmd.exe
 SET LMESZINC=https://github.com/LmeSzinc/AzurLaneAutoScript.git
 SET GITEE=https://gitee.com/lmeszinc/AzurLaneAutoScript.git
 SET WHOAMIKYO=https://github.com/whoamikyo/AzurLaneAutoScript.git
+SET ENV=https://github.com/whoamikyo/alas-env.git
 :: -----------------------------------------------------------------------------
 goto check_Permissions
 :check_Permissions
@@ -74,8 +78,8 @@ goto menu
 :: -----------------------------------------------------------------------------
 :start
 SET AZURLANESCRIPT=%~dp0
-SET PYTHON=%AZURLANESCRIPT%\python-3.7.6.amd64\python.exe
-SET GIT_PATH=%AZURLANESCRIPT%\python-3.7.6.amd64\Git\cmd
+SET PYTHON=%AZURLANESCRIPT%\toolkit\python.exe
+SET GIT_PATH=%AZURLANESCRIPT%\toolkit\Git\cmd
 SET GIT=%GIT_PATH%\git.exe
 	call %GIT% --version >nul
 	if %errorlevel% == 0 (
@@ -85,7 +89,7 @@ SET GIT=%GIT_PATH%\git.exe
 	cd %AZURLANESCRIPT%
 rem 	echo Deleting folder unused files
 rem 	for /D %%D in ("*") do (
-rem     if /I not "%%~nxD"=="python-3.7.6.amd64" rd /S /Q "%%~D"
+rem     if /I not "%%~nxD"=="toolkit" rd /S /Q "%%~D"
 rem 	)
 rem for %%F in ("*") do (
 rem     del "%%~F"
@@ -100,6 +104,9 @@ rem 	)
 	call %GIT% branch --set-upstream-to=origin/master master
 	echo ## adding whoamikyo remote origin
 	call %GIT% remote add whoamikyo %WHOAMIKYO%
+	call cd toolkit
+	echo ## initializing toolkit..
+	call %GIT% init
 	call %PYTHON% --version >nul
 	if %errorlevel% == 0 (
 	echo Python Found! Proceeding..
@@ -111,7 +118,7 @@ rem 	)
 	goto menu
 	) else (
 		echo :: it was not possible to install uiautomator2
-		echo :: make sure you have a folder "python-3.7.6.amd64"
+		echo :: make sure you have a folder "toolkit"
 		echo :: inside AzurLaneAutoScript folder.
 		echo.
         pause > NUL
@@ -139,7 +146,7 @@ rem 	)
 	rem goto menu
 	rem ) else (
 	rem 	echo :: it was not possible to install uiautomator2
-	rem 	echo :: make sure you have a folder "python-3.7.6.amd64"
+	rem 	echo :: make sure you have a folder "toolkit"
 	rem 	echo :: inside AzurLaneAutoScript folder.
 	rem 	echo.
  rem        pause > NUL
@@ -172,8 +179,8 @@ cls
 :: -----------------------------------------------------------------------------
 :start_gitee
 SET AZURLANESCRIPT=%~dp0
-SET PYTHON=%AZURLANESCRIPT%\python-3.7.6.amd64\python.exe
-SET GIT_PATH=%AZURLANESCRIPT%\python-3.7.6.amd64\Git\cmd
+SET PYTHON=%AZURLANESCRIPT%\toolkit\python.exe
+SET GIT_PATH=%AZURLANESCRIPT%\toolkit\Git\cmd
 SET GIT=%GIT_PATH%\git.exe
 	call %GIT% --version >nul
 	if %errorlevel% == 0 (
@@ -183,7 +190,7 @@ SET GIT=%GIT_PATH%\git.exe
 	cd %AZURLANESCRIPT%
 rem 	echo Deleting folder unused files
 rem 	for /D %%D in ("*") do (
-rem     if /I not "%%~nxD"=="python-3.7.6.amd64" rd /S /Q "%%~D"
+rem     if /I not "%%~nxD"=="toolkit" rd /S /Q "%%~D"
 rem 	)
 rem for %%F in ("*") do (
 rem     del "%%~F"
@@ -209,7 +216,7 @@ rem 	)
 	goto menu
 	) else (
 		echo :: it was not possible to install uiautomator2
-		echo :: make sure you have a folder "python-3.7.6.amd64"
+		echo :: make sure you have a folder "toolkit"
 		echo :: inside AzurLaneAutoScript folder.
 		echo.
         pause > NUL
