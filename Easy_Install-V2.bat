@@ -107,6 +107,11 @@ rem 	)
 	call cd toolkit
 	echo ## initializing toolkit..
 	call %GIT% init
+	echo ## adding origin..
+	call %GIT% remote add origin %ENV%
+	echo ## setting default branch...
+	call %GIT% branch --set-upstream-to=origin/master master
+	call cd ..
 	call %PYTHON% --version >nul
 	if %errorlevel% == 0 (
 	echo Python Found! Proceeding..
