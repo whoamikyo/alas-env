@@ -1,10 +1,26 @@
 @echo off
-rem pushd "%~dp0"
+pushd "%~dp0"
 :: VARIABLES INSTALL
 
 SET CMD=%SystemRoot%\system32\cmd.exe
 SET LMESZINC=https://github.com/LmeSzinc/AzurLaneAutoScript.git
+SET GITEE=https://gitee.com/lmeszinc/AzurLaneAutoScript.git
 SET WHOAMIKYO=https://github.com/whoamikyo/AzurLaneAutoScript.git
+:: -----------------------------------------------------------------------------
+goto check_Permissions
+:check_Permissions
+    echo Administrative permissions required. Detecting permissions...
+
+    net session >nul 2>&1
+    if %errorLevel% == 0 (
+        echo Success: Administrative permissions confirmed.
+        pause >nul
+        goto menu
+    ) else (
+        echo Failure: Current permissions inadequate.
+    )
+
+    pause >nul
 
 :: -----------------------------------------------------------------------------
 goto menu
@@ -26,7 +42,7 @@ goto menu
 	echo  :: Type 'exit' to quit
 	echo.
 	set /P menu=
-		if %menu%==start GOTO start
+		if %menu%==start GOTO check_connection
 		if %menu%==exit GOTO EOF
 		
 		else (
@@ -130,6 +146,84 @@ rem 	)
  rem        pause > NUL
  rem        goto menu
 	rem )
+:: -----------------------------------------------------------------------------
+:check_connection
+cls
+	echo.
+	echo  :: Checking For Internet Connection to Github...
+	echo.
+	timeout /t 2 /nobreak > NUL
+
+	ping -n 1 google.com -w 20000 >nul
+
+	if %errorlevel% == 0 (
+	echo You have a good connection with Github! Proceeding...
+	echo press any to proceed
+	pause > NUL
+	goto start
+	) else (
+		echo  :: You don't have a good connection out of China
+		echo  :: It might be better to update using Gitee
+		echo  :: Redirecting...
+		echo.
+        echo     Press any key to continue...
+        pause > NUL
+        goto start_gitee
+	)
+:: -----------------------------------------------------------------------------
+:start_gitee
+SET AZURLANESCRIPT=%~dp0
+SET PYTHON=%AZURLANESCRIPT%\python-3.7.6.amd64\python.exe
+SET GIT_PATH=%AZURLANESCRIPT%\python-3.7.6.amd64\Git\cmd
+SET GIT=%GIT_PATH%\git.exe
+	call %GIT% --version >nul
+	if %errorlevel% == 0 (
+	echo Cloning repository
+	echo GIT Found! Proceeding..
+	echo Cloning repository...
+	cd %AZURLANESCRIPT%
+rem 	echo Deleting folder unused files
+rem 	for /D %%D in ("*") do (
+rem     if /I not "%%~nxD"=="python-3.7.6.amd64" rd /S /Q "%%~D"
+rem 	)
+rem for %%F in ("*") do (
+rem     del "%%~F"
+rem 	)
+	echo ## initializing..
+	call %GIT% init
+	echo ## adding origin..
+	call %GIT% remote add origin %GITEE%
+	echo ## pulling project...
+	call %GIT% pull origin master
+	echo ## setting default branch...
+	call %GIT% branch --set-upstream-to=origin/master master
+	call %PYTHON% --version >nul
+	if %errorlevel% == 0 (
+	echo Python Found! Proceeding..
+	echo initializing uiautomator2..
+	call %PYTHON% -m uiautomator2 init
+	echo The installation was successful
+	echo Press any key to proceed
+	pause > NUL
+	goto menu
+	) else (
+		echo :: it was not possible to install uiautomator2
+		echo :: make sure you have a folder "python-3.7.6.amd64"
+		echo :: inside AzurLaneAutoScript folder.
+		echo.
+        pause > NUL
+        goto menu
+	)
+	echo The installation was successful
+	echo Press any key to proceed
+	pause > NUL
+	goto menu
+	) else (
+		echo  :: Git not found, maybe there was an installation issue
+		echo.
+        pause > NUL
+        goto menu
+	)
 :: -----------------------------------------------------------------------------
 :EOF
 exit
