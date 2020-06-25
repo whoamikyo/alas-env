@@ -45,7 +45,7 @@ goto menu
 	echo  :: Type 'exit' to quit
 	echo.
 	set /P menu=
-		if %menu%==start GOTO check_connection
+		if %menu%==start GOTO start
 		if %menu%==exit GOTO EOF
 		
 		else (
@@ -104,14 +104,8 @@ rem 	)
 	call %GIT% branch --set-upstream-to=origin/master master
 	echo ## adding whoamikyo remote origin
 	call %GIT% remote add whoamikyo %WHOAMIKYO%
-	call cd toolkit
-	echo ## initializing toolkit..
-	call %GIT% init
-	echo ## adding origin..
-	call %GIT% remote add origin %ENV%
-	echo ## setting default branch...
-	call %GIT% branch --set-upstream-to=origin/master master
-	call cd ..
+	echo ## adding LMESZINC/GITEE remote origin
+	call %GIT% remote add lmeszincgitee %GITEE%
 	call %PYTHON% --version >nul
 	if %errorlevel% == 0 (
 	echo Python Found! Proceeding..
@@ -158,41 +152,41 @@ rem 	)
  rem        goto menu
 	rem )
 :: -----------------------------------------------------------------------------
-:check_connection
-cls
-	echo.
-	echo  :: Checking For Internet Connection to Github...
-	echo.
-	timeout /t 2 /nobreak > NUL
+rem :check_connection
+rem cls
+rem 	echo.
+rem 	echo  :: Checking For Internet Connection to Github...
+rem 	echo.
+rem 	timeout /t 2 /nobreak > NUL
 
-	ping -n 1 google.com -w 20000 >nul
+rem 	ping -n 1 google.com -w 20000 >nul
 
-	if %errorlevel% == 0 (
-	echo You have a good connection with Github! Proceeding...
-	echo press any to proceed
-	pause > NUL
-	goto start
-	) else (
-		echo  :: You don't have a good connection out of China
-		echo  :: It might be better to update using Gitee
-		echo  :: Redirecting...
-		echo.
-        echo     Press any key to continue...
-        pause > NUL
-        goto start_gitee
-	)
-:: -----------------------------------------------------------------------------
-:start_gitee
-SET AZURLANESCRIPT=%~dp0
-SET PYTHON=%AZURLANESCRIPT%\toolkit\python.exe
-SET GIT_PATH=%AZURLANESCRIPT%\toolkit\Git\cmd
-SET GIT=%GIT_PATH%\git.exe
-	call %GIT% --version >nul
-	if %errorlevel% == 0 (
-	echo Cloning repository
-	echo GIT Found! Proceeding..
-	echo Cloning repository...
-	cd %AZURLANESCRIPT%
+rem 	if %errorlevel% == 0 (
+rem 	echo You have a good connection with Github! Proceeding...
+rem 	echo press any to proceed
+rem 	pause > NUL
+rem 	goto start
+rem 	) else (
+rem 		echo  :: You don't have a good connection out of China
+rem 		echo  :: It might be better to update using Gitee
+rem 		echo  :: Redirecting...
+rem 		echo.
+rem         echo     Press any key to continue...
+rem         pause > NUL
+rem         goto start_gitee
+rem 	)
+rem :: -----------------------------------------------------------------------------
+rem :start_gitee
+rem SET AZURLANESCRIPT=%~dp0
+rem SET PYTHON=%AZURLANESCRIPT%\toolkit\python.exe
+rem SET GIT_PATH=%AZURLANESCRIPT%\toolkit\Git\cmd
+rem SET GIT=%GIT_PATH%\git.exe
+rem 	call %GIT% --version >nul
+rem 	if %errorlevel% == 0 (
+rem 	echo Cloning repository
+rem 	echo GIT Found! Proceeding..
+rem 	echo Cloning repository...
+rem 	cd %AZURLANESCRIPT%
 rem 	echo Deleting folder unused files
 rem 	for /D %%D in ("*") do (
 rem     if /I not "%%~nxD"=="toolkit" rd /S /Q "%%~D"
@@ -200,43 +194,44 @@ rem 	)
 rem for %%F in ("*") do (
 rem     del "%%~F"
 rem 	)
-	echo ## initializing..
-	call %GIT% init
-	echo ## adding origin..
-	call %GIT% remote add origin %GITEE%
-	echo ## pulling project...
-	call %GIT% pull origin master
-	echo ## setting default branch...
-	call %GIT% branch --set-upstream-to=origin/master master
-	echo ## adding LMESZINC remote origin
-	call %GIT% remote add LMESZINC %LMESZINC%
-	call %PYTHON% --version >nul
-	if %errorlevel% == 0 (
-	echo Python Found! Proceeding..
-	echo initializing uiautomator2..
-	call %PYTHON% -m uiautomator2 init
-	echo The installation was successful
-	echo Press any key to proceed
-	pause > NUL
-	goto menu
-	) else (
-		echo :: it was not possible to install uiautomator2
-		echo :: make sure you have a folder "toolkit"
-		echo :: inside AzurLaneAutoScript folder.
-		echo.
-        pause > NUL
-        goto menu
-	)
-	echo The installation was successful
-	echo Press any key to proceed
-	pause > NUL
-	goto menu
-	) else (
-		echo  :: Git not found, maybe there was an installation issue
-		echo.
-        pause > NUL
-        goto menu
-	)
+	rem echo ## initializing..
+	rem call %GIT% init
+	rem echo ## adding origin..
+	rem call %GIT% remote add origin %GITEE%
+	rem echo ## pulling project...
+	rem call %GIT% pull origin master
+	rem echo ## setting default branch...
+	rem call %GIT% branch --set-upstream-to=origin/master master
+	rem echo ## adding LMESZINC remote origin
+	rem call %GIT% remote add LMESZINC %LMESZINC%
+	rem call %PYTHON% --version >nul
+	rem if %errorlevel% == 0 (
+	rem echo Python Found! Proceeding..
+	rem echo initializing uiautomator2..
+	rem call %PYTHON% -m uiautomator2 init
+	rem echo The installation was successful
+	rem echo Press any key to proceed
+	rem pause > NUL
+	rem goto menu
+	rem ) else (
+	rem 	echo :: it was not possible to install uiautomator2
+	rem 	echo :: make sure you have a folder "toolkit"
+	rem 	echo :: inside AzurLaneAutoScript folder.
+	rem 	echo.
+ rem        pause > NUL
+ rem        goto menu
+	rem )
+	rem echo The installation was successful
+	rem echo Press any key to proceed
+	rem pause > NUL
+	rem goto menu
+	rem ) else (
+	rem 	echo  :: Git not found, maybe there was an installation issue
+	rem 	echo.
+ rem        pause > NUL
+ rem        goto menu
+	rem )
 :: -----------------------------------------------------------------------------
+
 :EOF
 exit
