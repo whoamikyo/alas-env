@@ -14,7 +14,6 @@ SET ENV=https://github.com/whoamikyo/alas-env.git
 call :check_Permissions
 :check_Permissions
     echo Administrative permissions required. Detecting permissions...
-
     net session >nul 2>&1
     if %errorLevel% == 0 (
         echo Success: Administrative permissions confirmed.
@@ -23,7 +22,6 @@ call :check_Permissions
     ) else (
         echo Failure: Current permissions inadequate.
     )
-
     pause >nul
 :: -----------------------------------------------------------------------------
 call :menu
@@ -49,7 +47,6 @@ call :menu
 		if %menu%==start call :start
 	    if %menu%==gitee call :start_gitee
 		if %menu%==exit call :EOF
-
 		else (
 		cls
 	echo.
