@@ -18,10 +18,11 @@
 # coding: utf-8
 # pylint: disable= arguments-differ
 """Basic neural network layers."""
-__all__ = ['Activation', 'LeakyReLU', 'PReLU', 'ELU', 'SELU', 'Swish']
+__all__ = ['Activation', 'LeakyReLU', 'PReLU', 'ELU', 'SELU', 'Swish', 'GELU']
 
 from ... import initializer
 from ..block import HybridBlock
+from ...util import is_np_array
 
 
 class Activation(HybridBlock):
@@ -48,7 +49,8 @@ class Activation(HybridBlock):
         return self._act_type
 
     def hybrid_forward(self, F, x):
-        return F.Activation(x, act_type=self._act_type, name='fwd')
+        act = F.npx.activation if is_np_array() else F.Activation
+        return act(x, act_type=self._act_type, name='fwd')
 
     def __repr__(self):
         s = '{name}({_act_type})'
@@ -88,7 +90,8 @@ class LeakyReLU(HybridBlock):
         self._alpha = alpha
 
     def hybrid_forward(self, F, x):
-        return F.LeakyReLU(x, act_type='leaky', slope=self._alpha, name='fwd')
+        leaky_relu = F.npx.leaky_relu if is_np_array() else F.LeakyReLU
+        return leaky_relu(x, act_type='leaky', slope=self._alpha, name='fwd')
 
     def __repr__(self):
         s = '{name}({alpha})'
@@ -153,12 +156,13 @@ class ELU(HybridBlock):
     Outputs:
         - **out**: output tensor with the same shape as `data`.
     """
+
     def __init__(self, alpha=1.0, **kwargs):
         super(ELU, self).__init__(**kwargs)
         self._alpha = alpha
 
     def hybrid_forward(self, F, x):
-        return F.where(x > 0, x, self._alpha * (F.exp(x) - 1.0))
+        return F.LeakyReLU(x, act_type='elu', slope=self._alpha)
 
 
 class SELU(HybridBlock):
@@ -179,6 +183,25 @@ class SELU(HybridBlock):
 
     def hybrid_forward(self, F, x):
         return F.LeakyReLU(x, act_type='selu', name='fwd')
+
+class GELU(HybridBlock):
+    r"""
+    Gaussian Exponential Linear Unit (GELU)
+        "Gaussian Error Linear Units (GELUs)", Hendrycks et al, 2016
+        https://arxiv.org/abs/1606.08415
+
+
+    Inputs:
+        - **data**: input tensor with arbitrary shape.
+
+    Outputs:
+        - **out**: output tensor with the same shape as `data`.
+    """
+    def __init__(self, **kwargs):
+        super(GELU, self).__init__(**kwargs)
+
+    def hybrid_forward(self, F, x):
+        return F.LeakyReLU(x, act_type='gelu', name='fwd')
 
 
 class Swish(HybridBlock):

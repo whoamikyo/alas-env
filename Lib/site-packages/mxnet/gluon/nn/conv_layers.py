@@ -30,11 +30,17 @@ from ..block import HybridBlock
 from ... import symbol
 from ...base import numeric_types
 from .activations import Activation
+from ...util import is_np_array
 
 
 def _infer_weight_shape(op_name, data_shape, kwargs):
-    op = getattr(symbol, op_name)
-    sym = op(symbol.var('data', shape=data_shape), **kwargs)
+    data = symbol.var('data', shape=data_shape)
+    if is_np_array():
+        op = getattr(symbol.npx, op_name)
+        data = data.as_np_ndarray()
+    else:
+        op = getattr(symbol, op_name)
+    sym = op(data, **kwargs)
     return sym.infer_shape_partial()[0]
 
 
@@ -109,7 +115,11 @@ class _Conv(HybridBlock):
             if adj is not None:
                 self._kwargs['adj'] = adj
 
-            dshape = [0]*(len(kernel_size) + 2)
+            if is_np_array():
+                dshape = [-1]*(len(kernel_size) + 2)
+            else:
+                dshape = [0]*(len(kernel_size) + 2)
+
             dshape[layout.find('N')] = 1
             dshape[layout.find('C')] = in_channels
             wshapes = _infer_weight_shape(op_name, dshape, self._kwargs)
@@ -129,6 +139,8 @@ class _Conv(HybridBlock):
                 self.act = None
 
     def hybrid_forward(self, F, x, weight, bias=None):
+        if is_np_array():
+            F = F.npx
         if bias is None:
             act = getattr(F, self._op_name)(x, weight, name='fwd', **self._kwargs)
         else:
@@ -235,9 +247,13 @@ class Conv1D(_Conv):
         if isinstance(kernel_size, numeric_types):
             kernel_size = (kernel_size,)
         assert len(kernel_size) == 1, "kernel_size must be a number or a list of 1 ints"
+        op_name = kwargs.pop('op_name', 'Convolution')
+        if is_np_array():
+            op_name = 'convolution'
         super(Conv1D, self).__init__(
             channels, kernel_size, strides, padding, dilation, groups, layout,
-            in_channels, activation, use_bias, weight_initializer, bias_initializer, **kwargs)
+            in_channels, activation, use_bias, weight_initializer, bias_initializer,
+            op_name, **kwargs)
 
 
 class Conv2D(_Conv):
@@ -315,9 +331,13 @@ class Conv2D(_Conv):
         if isinstance(kernel_size, numeric_types):
             kernel_size = (kernel_size,)*2
         assert len(kernel_size) == 2, "kernel_size must be a number or a list of 2 ints"
+        op_name = kwargs.pop('op_name', 'Convolution')
+        if is_np_array():
+            op_name = 'convolution'
         super(Conv2D, self).__init__(
             channels, kernel_size, strides, padding, dilation, groups, layout,
-            in_channels, activation, use_bias, weight_initializer, bias_initializer, **kwargs)
+            in_channels, activation, use_bias, weight_initializer, bias_initializer,
+            op_name, **kwargs)
 
 
 class Conv3D(_Conv):
@@ -396,9 +416,13 @@ class Conv3D(_Conv):
         if isinstance(kernel_size, numeric_types):
             kernel_size = (kernel_size,)*3
         assert len(kernel_size) == 3, "kernel_size must be a number or a list of 3 ints"
+        op_name = kwargs.pop('op_name', 'Convolution')
+        if is_np_array():
+            op_name = 'convolution'
         super(Conv3D, self).__init__(
             channels, kernel_size, strides, padding, dilation, groups, layout,
-            in_channels, activation, use_bias, weight_initializer, bias_initializer, **kwargs)
+            in_channels, activation, use_bias, weight_initializer, bias_initializer,
+            op_name, **kwargs)
 
 
 class Conv1DTranspose(_Conv):
@@ -480,10 +504,13 @@ class Conv1DTranspose(_Conv):
             output_padding = (output_padding,)
         assert len(kernel_size) == 1, "kernel_size must be a number or a list of 1 ints"
         assert len(output_padding) == 1, "output_padding must be a number or a list of 1 ints"
+        op_name = kwargs.pop('op_name', 'Deconvolution')
+        if is_np_array():
+            op_name = 'deconvolution'
         super(Conv1DTranspose, self).__init__(
             channels, kernel_size, strides, padding, dilation, groups, layout,
             in_channels, activation, use_bias, weight_initializer,
-            bias_initializer, op_name='Deconvolution', adj=output_padding, **kwargs)
+            bias_initializer, op_name=op_name, adj=output_padding, **kwargs)
         self.outpad = output_padding
 
 
@@ -571,10 +598,13 @@ class Conv2DTranspose(_Conv):
             output_padding = (output_padding,)*2
         assert len(kernel_size) == 2, "kernel_size must be a number or a list of 2 ints"
         assert len(output_padding) == 2, "output_padding must be a number or a list of 2 ints"
+        op_name = kwargs.pop('op_name', 'Deconvolution')
+        if is_np_array():
+            op_name = 'deconvolution'
         super(Conv2DTranspose, self).__init__(
             channels, kernel_size, strides, padding, dilation, groups, layout,
             in_channels, activation, use_bias, weight_initializer,
-            bias_initializer, op_name='Deconvolution', adj=output_padding, **kwargs)
+            bias_initializer, op_name=op_name, adj=output_padding, **kwargs)
         self.outpad = output_padding
 
 
@@ -663,17 +693,20 @@ class Conv3DTranspose(_Conv):
             output_padding = (output_padding,)*3
         assert len(kernel_size) == 3, "kernel_size must be a number or a list of 3 ints"
         assert len(output_padding) == 3, "output_padding must be a number or a list of 3 ints"
+        op_name = kwargs.pop('op_name', 'Deconvolution')
+        if is_np_array():
+            op_name = 'deconvolution'
         super(Conv3DTranspose, self).__init__(
             channels, kernel_size, strides, padding, dilation, groups, layout,
             in_channels, activation, use_bias, weight_initializer, bias_initializer,
-            op_name='Deconvolution', adj=output_padding, **kwargs)
+            op_name=op_name, adj=output_padding, **kwargs)
         self.outpad = output_padding
 
 
 class _Pooling(HybridBlock):
     """Abstract class for different pooling layers."""
     def __init__(self, pool_size, strides, padding, ceil_mode, global_pool,
-                 pool_type, count_include_pad=None, **kwargs):
+                 pool_type, layout, count_include_pad=None, **kwargs):
         super(_Pooling, self).__init__(**kwargs)
         if strides is None:
             strides = pool_size
@@ -684,6 +717,7 @@ class _Pooling(HybridBlock):
         self._kwargs = {
             'kernel': pool_size, 'stride': strides, 'pad': padding,
             'global_pool': global_pool, 'pool_type': pool_type,
+            'layout': layout,
             'pooling_convention': 'full' if ceil_mode else 'valid'}
         if count_include_pad is not None:
             self._kwargs['count_include_pad'] = count_include_pad
@@ -692,10 +726,12 @@ class _Pooling(HybridBlock):
         return 'pool'
 
     def hybrid_forward(self, F, x):
-        return F.Pooling(x, name='fwd', **self._kwargs)
+        pooling = F.npx.pooling if is_np_array() else F.Pooling
+        return pooling(x, name='fwd', **self._kwargs)
 
     def __repr__(self):
-        s = '{name}(size={kernel}, stride={stride}, padding={pad}, ceil_mode={ceil_mode})'
+        s = '{name}(size={kernel}, stride={stride}, padding={pad}, ceil_mode={ceil_mode}'
+        s += ', global_pool={global_pool}, pool_type={pool_type}, layout={layout})'
         return s.format(name=self.__class__.__name__,
                         ceil_mode=self._kwargs['pooling_convention'] == 'full',
                         **self._kwargs)
@@ -716,7 +752,7 @@ class MaxPool1D(_Pooling):
         If padding is non-zero, then the input is implicitly
         zero-padded on both sides for padding number of points.
     layout : str, default 'NCW'
-        Dimension ordering of data and weight. Only supports 'NCW' layout for now.
+        Dimension ordering of data and out ('NCW' or 'NWC').
         'N', 'C', 'W' stands for batch, channel, and width (time) dimensions
         respectively. Pooling is applied on the W dimension.
     ceil_mode : bool, default False
@@ -738,12 +774,13 @@ class MaxPool1D(_Pooling):
     """
     def __init__(self, pool_size=2, strides=None, padding=0, layout='NCW',
                  ceil_mode=False, **kwargs):
-        assert layout == 'NCW', "Only supports 'NCW' layout for now"
+        assert layout in ('NCW', 'NWC'),\
+            "Only NCW and NWC layouts are valid for 1D Pooling"
         if isinstance(pool_size, numeric_types):
             pool_size = (pool_size,)
         assert len(pool_size) == 1, "pool_size must be a number or a list of 1 ints"
         super(MaxPool1D, self).__init__(
-            pool_size, strides, padding, ceil_mode, False, 'max', **kwargs)
+            pool_size, strides, padding, ceil_mode, False, 'max', layout, **kwargs)
 
 
 class MaxPool2D(_Pooling):
@@ -761,7 +798,7 @@ class MaxPool2D(_Pooling):
         If padding is non-zero, then the input is implicitly
         zero-padded on both sides for padding number of points.
     layout : str, default 'NCHW'
-        Dimension ordering of data and weight. Only supports 'NCHW' layout for now.
+        Dimension ordering of data and out ('NCHW' or 'NHWC').
         'N', 'C', 'H', 'W' stands for batch, channel, height, and width
         dimensions respectively. padding is applied on 'H' and 'W' dimension.
     ceil_mode : bool, default False
@@ -786,12 +823,13 @@ class MaxPool2D(_Pooling):
     """
     def __init__(self, pool_size=(2, 2), strides=None, padding=0, layout='NCHW',
                  ceil_mode=False, **kwargs):
-        assert layout == 'NCHW', "Only supports 'NCHW' layout for now"
+        assert layout in ('NCHW', 'NHWC'),\
+            "Only NCHW and NHWC layouts are valid for 2D Pooling"
         if isinstance(pool_size, numeric_types):
             pool_size = (pool_size,)*2
         assert len(pool_size) == 2, "pool_size must be a number or a list of 2 ints"
         super(MaxPool2D, self).__init__(
-            pool_size, strides, padding, ceil_mode, False, 'max', **kwargs)
+            pool_size, strides, padding, ceil_mode, False, 'max', layout, **kwargs)
 
 
 class MaxPool3D(_Pooling):
@@ -809,7 +847,7 @@ class MaxPool3D(_Pooling):
         If padding is non-zero, then the input is implicitly
         zero-padded on both sides for padding number of points.
     layout : str, default 'NCDHW'
-        Dimension ordering of data and weight. Only supports 'NCDHW' layout for now.
+        Dimension ordering of data and out ('NCDHW' or 'NDHWC').
         'N', 'C', 'H', 'W', 'D' stands for batch, channel, height, width and
         depth dimensions respectively. padding is applied on 'D', 'H' and 'W'
         dimension.
@@ -836,12 +874,13 @@ class MaxPool3D(_Pooling):
     """
     def __init__(self, pool_size=(2, 2, 2), strides=None, padding=0,
                  ceil_mode=False, layout='NCDHW', **kwargs):
-        assert layout == 'NCDHW', "Only supports 'NCDHW' layout for now"
+        assert layout in ('NCDHW', 'NDHWC'),\
+            "Only NCDHW and NDHWC layouts are valid for 3D Pooling"
         if isinstance(pool_size, numeric_types):
             pool_size = (pool_size,)*3
         assert len(pool_size) == 3, "pool_size must be a number or a list of 3 ints"
         super(MaxPool3D, self).__init__(
-            pool_size, strides, padding, ceil_mode, False, 'max', **kwargs)
+            pool_size, strides, padding, ceil_mode, False, 'max', layout, **kwargs)
 
 
 class AvgPool1D(_Pooling):
@@ -850,7 +889,7 @@ class AvgPool1D(_Pooling):
     Parameters
     ----------
     pool_size: int
-        Size of the max pooling windows.
+        Size of the average pooling windows.
     strides: int, or None
         Factor by which to downscale. E.g. 2 will halve the input size.
         If `None`, it will default to `pool_size`.
@@ -858,7 +897,7 @@ class AvgPool1D(_Pooling):
         If padding is non-zero, then the input is implicitly
         zero-padded on both sides for padding number of points.
     layout : str, default 'NCW'
-        Dimension ordering of data and weight. Only supports 'NCW' layout for now.
+        Dimension ordering of data and out ('NCW' or 'NWC').
         'N', 'C', 'W' stands for batch, channel, and width (time) dimensions
         respectively. padding is applied on 'W' dimension.
     ceil_mode : bool, default False
@@ -882,12 +921,14 @@ class AvgPool1D(_Pooling):
     """
     def __init__(self, pool_size=2, strides=None, padding=0, layout='NCW',
                  ceil_mode=False, count_include_pad=True, **kwargs):
-        assert layout == 'NCW', "Only supports 'NCW' layout for now"
+        assert layout in ('NCW', 'NWC'),\
+            "Only NCW and NWC layouts are valid for 1D Pooling"
         if isinstance(pool_size, numeric_types):
             pool_size = (pool_size,)
         assert len(pool_size) == 1, "pool_size must be a number or a list of 1 ints"
         super(AvgPool1D, self).__init__(
-            pool_size, strides, padding, ceil_mode, False, 'avg', count_include_pad, **kwargs)
+            pool_size, strides, padding, ceil_mode, False, 'avg', layout, count_include_pad,
+            **kwargs)
 
 
 class AvgPool2D(_Pooling):
@@ -896,7 +937,7 @@ class AvgPool2D(_Pooling):
     Parameters
     ----------
     pool_size: int or list/tuple of 2 ints,
-        Size of the max pooling windows.
+        Size of the average pooling windows.
     strides: int, list/tuple of 2 ints, or None.
         Factor by which to downscale. E.g. 2 will halve the input size.
         If `None`, it will default to `pool_size`.
@@ -904,7 +945,7 @@ class AvgPool2D(_Pooling):
         If padding is non-zero, then the input is implicitly
         zero-padded on both sides for padding number of points.
     layout : str, default 'NCHW'
-        Dimension ordering of data and weight. Only supports 'NCHW' layout for now.
+        Dimension ordering of data and out ('NCHW' or 'NHWC').
         'N', 'C', 'H', 'W' stands for batch, channel, height, and width
         dimensions respectively. padding is applied on 'H' and 'W' dimension.
     ceil_mode : bool, default False
@@ -931,12 +972,14 @@ class AvgPool2D(_Pooling):
     """
     def __init__(self, pool_size=(2, 2), strides=None, padding=0,
                  ceil_mode=False, layout='NCHW', count_include_pad=True, **kwargs):
-        assert layout == 'NCHW', "Only supports 'NCHW' layout for now"
+        assert layout in ('NCHW', 'NHWC'),\
+            "Only NCHW and NHWC layouts are valid for 2D Pooling"
         if isinstance(pool_size, numeric_types):
             pool_size = (pool_size,)*2
         assert len(pool_size) == 2, "pool_size must be a number or a list of 2 ints"
         super(AvgPool2D, self).__init__(
-            pool_size, strides, padding, ceil_mode, False, 'avg', count_include_pad, **kwargs)
+            pool_size, strides, padding, ceil_mode, False, 'avg', layout, count_include_pad,
+            **kwargs)
 
 
 class AvgPool3D(_Pooling):
@@ -945,7 +988,7 @@ class AvgPool3D(_Pooling):
     Parameters
     ----------
     pool_size: int or list/tuple of 3 ints,
-        Size of the max pooling windows.
+        Size of the average pooling windows.
     strides: int, list/tuple of 3 ints, or None.
         Factor by which to downscale. E.g. 2 will halve the input size.
         If `None`, it will default to `pool_size`.
@@ -953,7 +996,7 @@ class AvgPool3D(_Pooling):
         If padding is non-zero, then the input is implicitly
         zero-padded on both sides for padding number of points.
     layout : str, default 'NCDHW'
-        Dimension ordering of data and weight. Can be 'NCDHW', 'NDHWC', etc.
+        Dimension ordering of data and out ('NCDHW' or 'NDHWC').
         'N', 'C', 'H', 'W', 'D' stands for batch, channel, height, width and
         depth dimensions respectively. padding is applied on 'D', 'H' and 'W'
         dimension.
@@ -982,12 +1025,14 @@ class AvgPool3D(_Pooling):
     """
     def __init__(self, pool_size=(2, 2, 2), strides=None, padding=0,
                  ceil_mode=False, layout='NCDHW', count_include_pad=True, **kwargs):
-        assert layout == 'NCDHW', "Only supports 'NCDHW' layout for now"
+        assert layout in ('NCDHW', 'NDHWC'),\
+            "Only NCDHW and NDHWC layouts are valid for 3D Pooling"
         if isinstance(pool_size, numeric_types):
             pool_size = (pool_size,)*3
         assert len(pool_size) == 3, "pool_size must be a number or a list of 3 ints"
         super(AvgPool3D, self).__init__(
-            pool_size, strides, padding, ceil_mode, False, 'avg', count_include_pad, **kwargs)
+            pool_size, strides, padding, ceil_mode, False, 'avg', layout, count_include_pad,
+            **kwargs)
 
 
 class GlobalMaxPool1D(_Pooling):
@@ -997,7 +1042,7 @@ class GlobalMaxPool1D(_Pooling):
     Parameters
     ----------
     layout : str, default 'NCW'
-        Dimension ordering of data and weight. Only supports 'NCW' layout for now.
+        Dimension ordering of data and out ('NCW' or 'NWC').
         'N', 'C', 'W' stands for batch, channel, and width (time) dimensions
         respectively. Pooling is applied on the W dimension.
 
@@ -1011,9 +1056,10 @@ class GlobalMaxPool1D(_Pooling):
           when `layout` is `NCW`.
     """
     def __init__(self, layout='NCW', **kwargs):
-        assert layout == 'NCW', "Only supports 'NCW' layout for now"
+        assert layout in ('NCW', 'NWC'),\
+            "Only NCW and NWC layouts are valid for 1D Pooling"
         super(GlobalMaxPool1D, self).__init__(
-            (1,), None, 0, True, True, 'max', **kwargs)
+            (1,), None, 0, True, True, 'max', layout, **kwargs)
 
 
 class GlobalMaxPool2D(_Pooling):
@@ -1023,7 +1069,7 @@ class GlobalMaxPool2D(_Pooling):
     Parameters
     ----------
     layout : str, default 'NCHW'
-        Dimension ordering of data and weight. Only supports 'NCHW' layout for now.
+        Dimension ordering of data and out ('NCHW' or 'NHWC').
         'N', 'C', 'H', 'W' stands for batch, channel, height, and width
         dimensions respectively. padding is applied on 'H' and 'W' dimension.
 
@@ -1038,9 +1084,10 @@ class GlobalMaxPool2D(_Pooling):
           `(batch_size, channels, 1, 1)` when `layout` is `NCHW`.
     """
     def __init__(self, layout='NCHW', **kwargs):
-        assert layout == 'NCHW', "Only supports 'NCHW' layout for now"
+        assert layout in ('NCHW', 'NHWC'),\
+            "Only NCHW and NHWC layouts are valid for 2D Pooling"
         super(GlobalMaxPool2D, self).__init__(
-            (1, 1), None, 0, True, True, 'max', **kwargs)
+            (1, 1), None, 0, True, True, 'max', layout, **kwargs)
 
 
 class GlobalMaxPool3D(_Pooling):
@@ -1050,7 +1097,7 @@ class GlobalMaxPool3D(_Pooling):
     Parameters
     ----------
     layout : str, default 'NCDHW'
-        Dimension ordering of data and weight. Only supports 'NCDHW' layout for now.
+        Dimension ordering of data and out ('NCDHW' or 'NDHWC').
         'N', 'C', 'H', 'W', 'D' stands for batch, channel, height, width and
         depth dimensions respectively. padding is applied on 'D', 'H' and 'W'
         dimension.
@@ -1066,9 +1113,10 @@ class GlobalMaxPool3D(_Pooling):
           `(batch_size, channels, 1, 1, 1)` when `layout` is `NCDHW`.
     """
     def __init__(self, layout='NCDHW', **kwargs):
-        assert layout == 'NCDHW', "Only supports 'NCDHW' layout for now"
+        assert layout in ('NCDHW', 'NDHWC'),\
+            "Only NCDHW and NDHWC layouts are valid for 3D Pooling"
         super(GlobalMaxPool3D, self).__init__(
-            (1, 1, 1), None, 0, True, True, 'max', **kwargs)
+            (1, 1, 1), None, 0, True, True, 'max', layout, **kwargs)
 
 
 class GlobalAvgPool1D(_Pooling):
@@ -1077,7 +1125,7 @@ class GlobalAvgPool1D(_Pooling):
     Parameters
     ----------
     layout : str, default 'NCW'
-        Dimension ordering of data and weight. Only supports 'NCW' layout for now.
+        Dimension ordering of data and out ('NCW' or 'NWC').
         'N', 'C', 'W' stands for batch, channel, and width (time) dimensions
         respectively. padding is applied on 'W' dimension.
 
@@ -1090,9 +1138,10 @@ class GlobalAvgPool1D(_Pooling):
         - **out**: 3D output tensor with shape `(batch_size, channels, 1)`.
     """
     def __init__(self, layout='NCW', **kwargs):
-        assert layout == 'NCW', "Only supports 'NCW' layout for now"
+        assert layout in ('NCW', 'NWC'),\
+            "Only NCW and NWC layouts are valid for 1D Pooling"
         super(GlobalAvgPool1D, self).__init__(
-            (1,), None, 0, True, True, 'avg', **kwargs)
+            (1,), None, 0, True, True, 'avg', layout, **kwargs)
 
 
 class GlobalAvgPool2D(_Pooling):
@@ -1101,7 +1150,7 @@ class GlobalAvgPool2D(_Pooling):
     Parameters
     ----------
     layout : str, default 'NCHW'
-        Dimension ordering of data and weight. Only supports 'NCHW' layout for now.
+        Dimension ordering of data and out ('NCHW' or 'NHWC').
         'N', 'C', 'H', 'W' stands for batch, channel, height, and width
         dimensions respectively.
 
@@ -1116,9 +1165,10 @@ class GlobalAvgPool2D(_Pooling):
           `(batch_size, channels, 1, 1)` when `layout` is `NCHW`.
     """
     def __init__(self, layout='NCHW', **kwargs):
-        assert layout == 'NCHW', "Only supports 'NCHW' layout for now"
+        assert layout in ('NCHW', 'NHWC'),\
+            "Only NCHW and NHWC layouts are valid for 2D Pooling"
         super(GlobalAvgPool2D, self).__init__(
-            (1, 1), None, 0, True, True, 'avg', **kwargs)
+            (1, 1), None, 0, True, True, 'avg', layout, **kwargs)
 
 
 class GlobalAvgPool3D(_Pooling):
@@ -1127,7 +1177,7 @@ class GlobalAvgPool3D(_Pooling):
     Parameters
     ----------
     layout : str, default 'NCDHW'
-        Dimension ordering of data and weight. Can be 'NCDHW', 'NDHWC', etc.
+        Dimension ordering of data and out ('NCDHW' or 'NDHWC').
         'N', 'C', 'H', 'W', 'D' stands for batch, channel, height, width and
         depth dimensions respectively. padding is applied on 'D', 'H' and 'W'
         dimension.
@@ -1143,9 +1193,10 @@ class GlobalAvgPool3D(_Pooling):
           `(batch_size, channels, 1, 1, 1)` when `layout` is `NCDHW`.
     """
     def __init__(self, layout='NCDHW', **kwargs):
-        assert layout == 'NCDHW', "Only supports 'NCDHW' layout for now"
+        assert layout in ('NCDHW', 'NDHWC'),\
+            "Only NCDHW and NDHWC layouts are valid for 3D Pooling"
         super(GlobalAvgPool3D, self).__init__(
-            (1, 1, 1), None, 0, True, True, 'avg', **kwargs)
+            (1, 1, 1), None, 0, True, True, 'avg', layout, **kwargs)
 
 
 class ReflectionPad2D(HybridBlock):
