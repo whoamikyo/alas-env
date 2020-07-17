@@ -9,7 +9,8 @@ SET CMD=%SystemRoot%\system32\cmd.exe
 SET LMESZINC=https://github.com/LmeSzinc/AzurLaneAutoScript.git
 SET GITEE=https://gitee.com/lmeszinc/AzurLaneAutoScript.git
 SET WHOAMIKYO=https://github.com/whoamikyo/AzurLaneAutoScript.git
-SET ENV=https://github.com/whoamikyo/alas-env.git
+SET ALAS_ENV=https://github.com/whoamikyo/alas-env.git
+SET ALAS_ENV_GITEE=https://gitee.com/lmeszinc/alas-env.git
 :: -----------------------------------------------------------------------------
 call :check_Permissions
 :check_Permissions
@@ -110,6 +111,22 @@ rem 	)
 	echo Python Found! Proceeding..
 	echo initializing uiautomator2..
 	call %PYTHON% -m uiautomator2 init
+	echo Updating toolkit..
+	call cd toolkit
+	echo ## initializing toolkit..
+	call %GIT% init
+	call %GIT% config --global core.autocrlf false
+	echo ## Adding files
+	echo ## This process may take a while
+	call %GIT% add -A
+	echo ## adding origin..
+	call %GIT% remote add origin %ALAS_ENV%
+	echo Fething...
+	call %GIT% fetch origin master
+	call %GIT% reset --hard origin/master
+	echo Pulling...
+	call %GIT% pull --ff-only origin master
+	call cd ..
 	echo The installation was successful
 	echo Press any key to proceed
 	pause > NUL
@@ -185,6 +202,22 @@ SET GIT=%GIT_PATH%\git.exe
 	echo Python Found! Proceeding..
 	echo initializing uiautomator2..
 	call %PYTHON% -m uiautomator2 init
+	echo Updating toolkit..
+	call cd toolkit
+	echo ## initializing toolkit..
+	call %GIT% init
+	call %GIT% config --global core.autocrlf false
+	echo ## Adding files
+	echo ## This process may take a while
+	call %GIT% add -A
+	echo ## adding origin..
+	call %GIT% remote add origin %ALAS_ENV_GITEE%
+	echo Fething...
+	call %GIT% fetch origin master
+	call %GIT% reset --hard origin/master
+	echo Pulling...
+	call %GIT% pull --ff-only origin master
+	call cd ..
 	echo The installation was successful
 	echo Press any key to proceed
 	pause > NUL
