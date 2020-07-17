@@ -87,13 +87,6 @@ SET GIT=%GIT_PATH%\git.exe
 	echo GIT Found! Proceeding..
 	echo Cloning repository...
 	cd %AZURLANESCRIPT%
-rem 	echo Deleting folder unused files
-rem 	for /D %%D in ("*") do (
-rem     if /I not "%%~nxD"=="toolkit" rd /S /Q "%%~D"
-rem 	)
-rem for %%F in ("*") do (
-rem     del "%%~F"
-rem 	)
 	echo ## initializing..
 	call %GIT% init
 	echo ## adding origin..
@@ -109,8 +102,6 @@ rem 	)
 	call %PYTHON% --version >nul
 	if %errorlevel% == 0 (
 	echo Python Found! Proceeding..
-	echo initializing uiautomator2..
-	call %PYTHON% -m uiautomator2 init
 	echo Updating toolkit..
 	call cd toolkit
 	echo ## initializing toolkit..
@@ -200,8 +191,6 @@ SET GIT=%GIT_PATH%\git.exe
 	call %PYTHON% --version >nul
 	if %errorlevel% == 0 (
 	echo Python Found! Proceeding..
-	echo initializing uiautomator2..
-	call %PYTHON% -m uiautomator2 init
 	echo Updating toolkit..
 	call cd toolkit
 	echo ## initializing toolkit..
