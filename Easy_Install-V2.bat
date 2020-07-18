@@ -1,11 +1,6 @@
 @echo off
 pushd "%~dp0"
 :: VARIABLES INSTALL
-SET RENAME="toolkit"
-if exist %RENAME% (
-  rename %RENAME% toolkit
-)
-SET CMD=%SystemRoot%\system32\cmd.exe
 SET LMESZINC=https://github.com/LmeSzinc/AzurLaneAutoScript.git
 SET GITEE=https://gitee.com/lmeszinc/AzurLaneAutoScript.git
 SET WHOAMIKYO=https://github.com/whoamikyo/AzurLaneAutoScript.git
@@ -99,8 +94,6 @@ SET GIT=%GIT_PATH%\git.exe
 	call %GIT% remote add whoamikyo %WHOAMIKYO%
 	echo ## adding LMESZINC/GITEE remote origin
 	call %GIT% remote add lmeszincgitee %GITEE%
-	call %PYTHON% --version >nul
-	if %errorlevel% == 0 (
 	echo Python Found! Proceeding..
 	echo Updating toolkit..
 	call cd toolkit
@@ -118,18 +111,6 @@ SET GIT=%GIT_PATH%\git.exe
 	echo Pulling...
 	call %GIT% pull --ff-only origin master
 	call cd ..
-	echo The installation was successful
-	echo Press any key to proceed
-	pause > NUL
-	call :menu
-	) else (
-		echo :: it was not possible to install uiautomator2
-		echo :: make sure you have a folder "toolkit"
-		echo :: inside AzurLaneAutoScript folder.
-		echo.
-        pause > NUL
-        call :menu
-	)
 	echo The installation was successful
 	echo Press any key to proceed
 	pause > NUL
@@ -188,9 +169,6 @@ SET GIT=%GIT_PATH%\git.exe
 	call %GIT% remote add whoamikyo %WHOAMIKYO%
 	echo ## adding LMESZINC remote origin
 	call %GIT% remote add LMESZINC %LMESZINC%
-	call %PYTHON% --version >nul
-	if %errorlevel% == 0 (
-	echo Python Found! Proceeding..
 	echo Updating toolkit..
 	call cd toolkit
 	echo ## initializing toolkit..
@@ -207,18 +185,6 @@ SET GIT=%GIT_PATH%\git.exe
 	echo Pulling...
 	call %GIT% pull --ff-only origin master
 	call cd ..
-	echo The installation was successful
-	echo Press any key to proceed
-	pause > NUL
-	call :menu
-	) else (
-		echo :: it was not possible to install uiautomator2
-		echo :: make sure you have a folder "toolkit"
-		echo :: inside AzurLaneAutoScript folder.
-		echo.
-        pause > NUL
-        call :menu
-	)
 	echo The installation was successful
 	echo Press any key to proceed
 	pause > NUL
