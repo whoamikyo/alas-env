@@ -94,7 +94,6 @@ SET GIT=%GIT_PATH%\git.exe
 	call %GIT% remote add whoamikyo %WHOAMIKYO%
 	echo ## adding LMESZINC/GITEE remote origin
 	call %GIT% remote add lmeszincgitee %GITEE%
-	echo Python Found! Proceeding..
 	echo Updating toolkit..
 	call cd toolkit
 	echo ## initializing toolkit..
