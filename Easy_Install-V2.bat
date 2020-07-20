@@ -87,7 +87,7 @@ SET GIT=%GIT_PATH%\git.exe
 	echo ## adding origin..
 	call %GIT% remote add origin %LMESZINC%
 	echo ## pulling project...
-	call %GIT% pull origin master
+	call %GIT% pull --ff-only origin master
 	echo ## setting default branch...
 	call %GIT% branch --set-upstream-to=origin/master master
 	echo ## adding whoamikyo remote origin
@@ -159,15 +159,15 @@ SET GIT=%GIT_PATH%\git.exe
 	echo ## initializing..
 	call %GIT% init
 	echo ## adding origin..
-	call %GIT% remote add origin %GITEE%
-	echo ## pulling project...
-	call %GIT% pull origin master
-	echo ## setting default branch...
-	call %GIT% branch --set-upstream-to=origin/master master
+	call %GIT% remote add origin %LMESZINC%
+	rem echo ## setting default branch...
+	rem call %GIT% branch --set-upstream-to=origin/master master
 	echo ## adding whoamikyo remote origin
 	call %GIT% remote add whoamikyo %WHOAMIKYO%
-	echo ## adding LMESZINC remote origin
-	call %GIT% remote add LMESZINC %LMESZINC%
+	echo ## adding LMESZINC/GITEE remote origin
+	call %GIT% remote add lmeszincgitee %GITEE%
+	echo ## pulling project...
+	call %GIT% pull --ff-only lmeszincgitee master
 	echo Updating toolkit..
 	call cd toolkit
 	echo ## initializing toolkit..
